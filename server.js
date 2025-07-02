@@ -10,7 +10,7 @@ const authRoutes = require('./routes/auth');
 require('dotenv').config();
 
 app.use(cors({
-    origin: 'http://localhost:5173', // Frontend URL
+    origin: process.env.CLIENT_URL,// Frontend URL
     credentials: true               // allow sending cookies
 }));
 
@@ -45,6 +45,10 @@ cron.schedule('* * * * *', async () => {
   }
 });
 
+app.use((req, res) => {
+  res.status(404).json({ message: "Not Found" });
+});
+
 
 app.use(cookieParser());
 app.use(express.json());
@@ -54,4 +58,10 @@ app.use('/api/rides', require('./routes/rides'));
 app.use('/api/ride-requests', require('./routes/rideRequests'));
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+// app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
+app.listen(PORT, () => {
+  if (process.env.NODE_ENV !== 'production') {
+    console.log(`🚀 Server running at http://localhost:${PORT}`);
+  }
+});

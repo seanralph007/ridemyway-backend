@@ -6,3 +6,8 @@ node_modules/
 
 # Ignore delete logs
 logs/
+*.log
+
+# OS junk
+.DS_Store
+Thumbs.db
