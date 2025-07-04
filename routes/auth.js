@@ -36,7 +36,8 @@ router.post('/signup', async (req, res) => {
     `, [name, email, hashedPassword, role, false, verificationToken]);
 
     // Send verification email
-    const link = `http://localhost:5173/verify-email?token=${verificationToken}&email=${encodeURIComponent(email)}`;
+    // const link = `http://localhost:5173/verify-email?token=${verificationToken}&email=${encodeURIComponent(email)}`;
+    const link = `${process.env.CLIENT_URL}/verify-email?token=${verificationToken}&email=${encodeURIComponent(email)}`;
 
     await transporter.sendMail({
       from: `"RideMyWay" <${process.env.EMAIL_USER}>`,
