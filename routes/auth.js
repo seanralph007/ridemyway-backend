@@ -88,8 +88,8 @@ router.get('/verify-email', async (req, res) => {
 
     res.cookie('token', jwtToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      secure: true,
+      sameSite: 'none',
       maxAge: 24 * 60 * 60 * 1000,
     });
 
@@ -121,9 +121,9 @@ router.post('/login', async (req, res) => {
 
     res.cookie('token', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 24 * 60 * 60 * 1000,
+      secure: true,             // ✅ for HTTPS (Vercel & Render use HTTPS)
+      sameSite: 'none',         // ✅ allow cross-site cookie usage
+      maxAge: 24 * 60 * 60 * 1000
     });
 
     res.json({ user: { id: user.id, name: user.name, role: user.role } });
