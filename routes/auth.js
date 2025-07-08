@@ -121,8 +121,8 @@ router.post('/login', async (req, res) => {
 
     res.cookie('token', token, {
       httpOnly: true,
-      secure: true,             // ✅ for HTTPS (Vercel & Render use HTTPS)
-      sameSite: 'none',         // ✅ allow cross-site cookie usage
+      secure: true,
+      sameSite: 'none',
       maxAge: 24 * 60 * 60 * 1000
     });
 
