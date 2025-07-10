@@ -1,0 +1,6 @@
+[2025-07-10T14:52:00.034Z] ❌ Error: read ECONNRESET
+[2025-07-10T14:53:00.021Z] ❌ Error: read ECONNRESET
+[2025-07-10T14:54:00.027Z] ❌ Error: read ECONNRESET
+[2025-07-10T14:55:00.029Z] ❌ Error: read ECONNRESET
+[2025-07-10T14:56:00.054Z] ❌ Error: read ECONNRESET
+[2025-07-10T14:57:00.030Z] ❌ Error: getaddrinfo ENOTFOUND dpg-d1fstmvfte5s73fub79g-a.oregon-postgres.render.com

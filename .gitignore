@@ -4,10 +4,6 @@ node_modules/
 # Ignore environment variables
 .env
 
-# Ignore delete logs
-logs/
-*.log
-
 # OS junk
 .DS_Store
 Thumbs.db
