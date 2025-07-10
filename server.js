@@ -9,9 +9,33 @@ const pool = require('./db')
 const authRoutes = require('./routes/auth');
 require('dotenv').config();
 
+// app.use(cors({
+//     origin: process.env.CLIENT_URL,// Frontend URL
+//     credentials: true               // allow sending cookies
+// }));
+
+const clientUrl = process.env.CLIENT_URL;
+const clientUrlRegex = process.env.CLIENT_URL_REGEX
+  ? new RegExp(process.env.CLIENT_URL_REGEX)
+  : null;
+
 app.use(cors({
-    origin: process.env.CLIENT_URL,// Frontend URL
-    credentials: true               // allow sending cookies
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true); // Allow Postman, curl, etc.
+
+    const isAllowed =
+      origin === clientUrl ||
+      (clientUrlRegex && clientUrlRegex.test(origin)) ||
+      origin === 'http://localhost:5173';
+
+    if (isAllowed) {
+      callback(null, true);
+    } else {
+      console.warn(`❌ Blocked CORS request from: ${origin}`);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true
 }));
 
 // Run every minute
