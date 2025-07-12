@@ -11,7 +11,7 @@ require('dotenv').config();
 
 // app.use(cors({
 //     origin: process.env.CLIENT_URL,// Frontend URL
-//     credentials: true               // allow sending cookies
+//     credentials: true               // allows sending cookies
 // }));
 
 const clientUrl = process.env.CLIENT_URL;
@@ -39,7 +39,6 @@ app.use(cors({
 }));
 
 // Run every minute
-
 cron.schedule('* * * * *', async () => {
   const timestamp = new Date().toISOString();
   try {

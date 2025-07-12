@@ -3,7 +3,7 @@ const router = express.Router();
 const pool = require('../db');
 const auth = require('../middleware/auth');
 
-// Driver views requests to their rides
+// Driver views ride requests to his/her rides
 router.get('/driver', auth, async (req, res) => {
   if (req.user.role !== 'driver') return res.status(403).json({ message: 'Forbidden' });
 
@@ -21,7 +21,7 @@ router.get('/driver', auth, async (req, res) => {
 
 router.put('/:id', auth, async (req, res) => {
     const { id } = req.params;             // request id
-    const { status } = req.body;           // 'accepted' or 'rejected'
+    const { status } = req.body;           // 'accepted' or 'rejected' or 'pending'
   
     if (!['accepted', 'rejected'].includes(status)) {
       return res.status(400).json({ message: 'Invalid status' });
@@ -52,7 +52,6 @@ router.put('/:id', auth, async (req, res) => {
         return res.status(400).json({ message: 'No available seats left' });
       }
   
-      // Begin a transaction to update both safely
       try {
         await pool.query('BEGIN');
   
@@ -77,7 +76,7 @@ router.put('/:id', auth, async (req, res) => {
         return res.status(500).json({ message: 'Something went wrong' });
       }
     } else {
-      // Rejected: just update status
+      // Rejected
       await pool.query(
         'UPDATE ride_requests SET status = $1 WHERE id = $2',
         [status, id]
@@ -92,7 +91,7 @@ router.delete('/:id', auth, async (req, res) => {
   const { id } = req.params;
 
   try {
-    // Get the request and verify ownership
+    // Get the request and verify which passenger wants to delete it
     const result = await pool.query(
       'SELECT * FROM ride_requests WHERE id = $1',
       [id]

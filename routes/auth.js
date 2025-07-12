@@ -11,12 +11,12 @@ const authMiddleware = require('../middleware/auth');
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
-    user: process.env.EMAIL_USER,      // Your Gmail address
-    pass: process.env.EMAIL_PASS       // Your Gmail app password
+    user: process.env.EMAIL_USER,      // Gmail address
+    pass: process.env.EMAIL_PASS       // Gmail app password
   }
 });
 
-// SIGNUP with verification email
+// SIGNUP
 router.post('/signup', async (req, res) => {
   const { name, email, password, role } = req.body;
   try {
@@ -101,7 +101,7 @@ router.get('/verify-email', async (req, res) => {
 });
 
 
-// LOGIN (with check for email verification)
+// LOGIN
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
 
