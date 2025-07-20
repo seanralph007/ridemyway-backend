@@ -8,7 +8,7 @@ function authMiddleware(req, res, next) {
 
   if (!token) {
     console.log("No token found in cookies");
-    return res.status(401).json({ message: 'Unauthorized (No token)' });
+    return res.status(401).json({ message: 'No token' });
   }
 
   try {
