@@ -46,7 +46,7 @@ router.get('/my-requests', auth, async (req, res) => {
 
 // Driver views their offered rides
 router.get('/my-offers', auth, async (req, res) => {
-  console.log("🧪 Authenticated user in /my-offers:", req.user);
+  console.log("Authenticated user in /my-offers:", req.user);
 
   if (!req.user) {
     return res.status(401).json({ message: "Unauthorized: No user found in request" });
@@ -128,7 +128,7 @@ router.delete('/:id', auth, async (req, res) => {
       return res.status(403).json({ message: 'You are not allowed to delete this ride' });
     }
 
-    // Delete any related ride requests first (to avoid FK constraint issues)
+    // Delete any related ride requests first (to avoid Foreign Key constraint bugs)
     await pool.query('DELETE FROM ride_requests WHERE ride_id = $1', [id]);
 
     // Then delete the ride

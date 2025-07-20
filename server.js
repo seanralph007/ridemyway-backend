@@ -31,7 +31,7 @@ app.use(cors({
     if (isAllowed) {
       callback(null, true);
     } else {
-      console.warn(`❌ Blocked CORS request from: ${origin}`);
+      console.warn(`Blocked CORS request from: ${origin}`);
       callback(new Error('Not allowed by CORS'));
     }
   },
@@ -57,12 +57,12 @@ cron.schedule('* * * * *', async () => {
       WHERE departure_time < NOW() - INTERVAL '1 hour'
     `);
 
-    const message = `[${timestamp}] 🧹 Cleaned up ${result.rowCount} expired ride(s)\n`;
+    const message = `[${timestamp}] Cleaned up ${result.rowCount} expired ride(s)\n`;
     console.log(message.trim());
     fs.appendFileSync(path.join(__dirname, 'logs', 'cleanup.log'), message);
 
   } catch (err) {
-    const errorLog = `[${timestamp}] ❌ Error: ${err.message}\n`;
+    const errorLog = `[${timestamp}] Error: ${err.message}\n`;
     console.error(errorLog.trim());
     fs.appendFileSync(path.join(__dirname, 'logs', 'cleanup.log'), errorLog);
   }
