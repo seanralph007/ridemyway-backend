@@ -1,30 +1,70 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const pool = require('../db');
-const auth = require('../middleware/auth');
+const pool = require("../db");
+const auth = require("../middleware/auth");
 
 // Create ride (Driver only)
-router.post('/', auth, async (req, res) => {
-  if (req.user.role !== 'driver') return res.status(403).json({ message: 'Forbidden' });
+router.post("/", auth, async (req, res) => {
+  if (req.user.role !== "driver")
+    return res.status(403).json({ message: "Forbidden" });
 
-  const { origin, destination, departure_time, available_seats, car_type } = req.body;
-  await pool.query(
-    'INSERT INTO rides (driver_id, origin, destination, departure_time, available_seats, car_type) VALUES ($1, $2, $3, $4, $5, $6)',
-    [req.user.id, origin, destination, departure_time, available_seats, car_type]
-  );
-  res.status(201).json({ message: 'Ride created' });
+  const {
+    origin,
+    origin_lat,
+    origin_lng,
+    destination,
+    destination_lat,
+    destination_lng,
+    departure_time,
+    available_seats,
+    car_type,
+  } = req.body;
+
+  try {
+    await pool.query(
+      `INSERT INTO rides 
+        (driver_id, origin, origin_lat, origin_lng, destination, destination_lat, destination_lng, departure_time, available_seats, car_type) 
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+      [
+        req.user.id,
+        origin,
+        origin_lat,
+        origin_lng,
+        destination,
+        destination_lat,
+        destination_lng,
+        departure_time,
+        available_seats,
+        car_type,
+      ]
+    );
+
+    res.status(201).json({ message: "Ride created successfully" });
+  } catch (err) {
+    console.error("❌ Error creating ride:", err.message);
+    res.status(500).json({ message: "Server error while creating ride" });
+  }
 });
 
 // View all rides
-router.get('/', async (req, res) => {
-  const result = await pool.query('SELECT * FROM rides ORDER BY departure_time ASC');
-  res.json(result.rows);
+router.get("/", async (req, res) => {
+  try {
+    const result = await pool.query(
+      "SELECT * FROM rides ORDER BY departure_time ASC"
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error("❌ Error fetching rides:", err.message);
+    res.status(500).json({ message: "Server error while fetching rides" });
+  }
 });
 
 // Passenger views their ride requests
-router.get('/my-requests', auth, async (req, res) => {
-  if (req.user.role !== 'passenger') {
-    return res.status(403).json({ message: 'Only passengers can view requests' });
+router.get("/my-requests", auth, async (req, res) => {
+  if (req.user.role !== "passenger") {
+    return res
+      .status(403)
+      .json({ message: "Only passengers can view requests" });
   }
 
   try {
@@ -40,25 +80,27 @@ router.get('/my-requests', auth, async (req, res) => {
     res.json(result.rows);
   } catch (err) {
     console.error("❌ Failed to fetch passenger requests:", err.message);
-    res.status(500).json({ message: "Server error while loading your requests" });
+    res
+      .status(500)
+      .json({ message: "Server error while loading your requests" });
   }
 });
 
 // Driver views their offered rides
-router.get('/my-offers', auth, async (req, res) => {
-  console.log("Authenticated user in /my-offers:", req.user);
-
+router.get("/my-offers", auth, async (req, res) => {
   if (!req.user) {
-    return res.status(401).json({ message: "Unauthorized: No user found in request" });
+    return res
+      .status(401)
+      .json({ message: "Unauthorized: No user found in request" });
   }
 
-  if (req.user.role !== 'driver') {
-    return res.status(403).json({ message: 'Forbidden: Not a driver' });
+  if (req.user.role !== "driver") {
+    return res.status(403).json({ message: "Forbidden: Not a driver" });
   }
 
   try {
     const ridesResult = await pool.query(
-      'SELECT * FROM rides WHERE driver_id = $1 ORDER BY departure_time DESC',
+      "SELECT * FROM rides WHERE driver_id = $1 ORDER BY departure_time DESC",
       [req.user.id]
     );
 
@@ -78,73 +120,74 @@ router.get('/my-offers', auth, async (req, res) => {
     res.json(rides);
   } catch (err) {
     console.error("❌ Error in /my-offers:", err.message);
-    res.status(500).json({ message: 'Server error while fetching your rides' });
+    res.status(500).json({ message: "Server error while fetching your rides" });
   }
 });
 
 // Passenger requests to join a ride
-router.post('/:rideId/request', auth, async (req, res) => {
-  if (req.user.role !== 'passenger') return res.status(403).json({ message: 'Forbidden' });
+router.post("/:rideId/request", auth, async (req, res) => {
+  if (req.user.role !== "passenger")
+    return res.status(403).json({ message: "Forbidden" });
 
   const { rideId } = req.params;
 
   try {
     await pool.query(
-      'INSERT INTO ride_requests (ride_id, passenger_id) VALUES ($1, $2)',
+      "INSERT INTO ride_requests (ride_id, passenger_id) VALUES ($1, $2)",
       [parseInt(rideId), req.user.id]
     );
-    res.status(201).json({ message: 'Request submitted' });
+    res.status(201).json({ message: "Request submitted" });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Something went wrong' });
+    console.error("❌ Error inserting ride request:", err.message);
+    res.status(500).json({ message: "Something went wrong" });
   }
 });
 
 // Get ride by ID
-router.get('/:id', async (req, res) => {
+router.get("/:id", async (req, res) => {
   const { id } = req.params;
 
   if (isNaN(id)) {
-    return res.status(400).json({ error: 'Ride ID must be a number' });
+    return res.status(400).json({ error: "Ride ID must be a number" });
   }
 
-  const result = await pool.query('SELECT * FROM rides WHERE id = $1', [parseInt(id)]);
-  res.json(result.rows[0]);
+  try {
+    const result = await pool.query("SELECT * FROM rides WHERE id = $1", [
+      parseInt(id),
+    ]);
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error("❌ Error fetching ride:", err.message);
+    res.status(500).json({ message: "Server error while fetching ride" });
+  }
 });
 
-router.delete('/:id', auth, async (req, res) => {
+// Delete ride
+router.delete("/:id", auth, async (req, res) => {
   const { id } = req.params;
 
   try {
-    // Check if the ride belongs to the driver
-    const ride = await pool.query('SELECT * FROM rides WHERE id = $1', [id]);
+    const ride = await pool.query("SELECT * FROM rides WHERE id = $1", [id]);
     const rideData = ride.rows[0];
 
     if (!rideData) {
-      return res.status(404).json({ message: 'Ride not found' });
+      return res.status(404).json({ message: "Ride not found" });
     }
 
     if (rideData.driver_id !== req.user.id) {
-      return res.status(403).json({ message: 'You are not allowed to delete this ride' });
+      return res
+        .status(403)
+        .json({ message: "You are not allowed to delete this ride" });
     }
 
-    // Delete any related ride requests first (to avoid Foreign Key constraint bugs)
-    await pool.query('DELETE FROM ride_requests WHERE ride_id = $1', [id]);
+    await pool.query("DELETE FROM ride_requests WHERE ride_id = $1", [id]);
+    await pool.query("DELETE FROM rides WHERE id = $1", [id]);
 
-    // Then delete the ride
-    await pool.query('DELETE FROM rides WHERE id = $1', [id]);
-
-    res.json({ message: 'Ride deleted successfully' });
+    res.json({ message: "Ride deleted successfully" });
   } catch (err) {
     console.error("❌ Error deleting ride:", err.message);
-    res.status(500).json({ message: 'Server error while deleting ride' });
+    res.status(500).json({ message: "Server error while deleting ride" });
   }
 });
-
-// router.stack.forEach((r) => {
-//   if (r.route && r.route.path) {
-//     console.log(`[ROUTE] ${Object.keys(r.route.methods)[0].toUpperCase()} ${r.route.path}`);
-//   }
-// });
 
 module.exports = router;
