@@ -1,27 +1,33 @@
-// const { Pool } = require('pg');
-// require('dotenv').config();
+// const { Pool } = require("pg");
+// require("dotenv").config();
 
 // const db = new Pool({
-//     user: process.env.PG_USER,
-//     host: process.env.PG_HOST,
-//     database: process.env.PG_DATABASE,
-//     password: process.env.PG_PASSWORD,
-//     port: process.env.PG_PORT,
+//   connectionString: process.env.DATABASE_URL,
+//   ssl:
+//     process.env.NODE_ENV === "production"
+//       ? { rejectUnauthorized: false }
+//       : false,
 // });
-
-// db.connect();
 
 // module.exports = db;
 
 const { Pool } = require("pg");
 require("dotenv").config();
 
-const db = new Pool({
+const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl:
-    process.env.NODE_ENV === "production"
-      ? { rejectUnauthorized: false }
-      : false,
+  ssl: {
+    rejectUnauthorized: false, // Supabase requires SSL (always true, dev + prod)
+  },
+  max: 10,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 10000,
 });
 
-module.exports = db;
+// Test connection
+pool
+  .query("SELECT NOW()")
+  .then((res) => console.log("✅ Database connected at:", res.rows[0].now))
+  .catch((err) => console.error("❌ Database connection error:", err.message));
+
+module.exports = pool;
