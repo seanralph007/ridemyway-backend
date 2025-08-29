@@ -46,11 +46,14 @@ router.post("/", auth, async (req, res) => {
   }
 });
 
-// View all rides
+// View all rides (with driver name)
 router.get("/", async (req, res) => {
   try {
     const result = await pool.query(
-      "SELECT * FROM rides ORDER BY departure_time ASC"
+      `SELECT r.*, u.name AS driver_name
+       FROM rides r
+       JOIN users u ON r.driver_id = u.id
+       ORDER BY r.departure_time ASC`
     );
     res.json(result.rows);
   } catch (err) {
@@ -69,9 +72,10 @@ router.get("/my-requests", auth, async (req, res) => {
 
   try {
     const result = await pool.query(
-      `SELECT rr.id, r.destination, r.departure_time, rr.status
+      `SELECT rr.id, r.destination, r.departure_time, rr.status, u.name AS driver_name
        FROM ride_requests rr
        JOIN rides r ON rr.ride_id = r.id
+       JOIN users u ON r.driver_id = u.id
        WHERE rr.passenger_id = $1
        ORDER BY r.departure_time ASC`,
       [req.user.id]
@@ -86,7 +90,7 @@ router.get("/my-requests", auth, async (req, res) => {
   }
 });
 
-// Driver views their offered rides
+// Driver views their offered rides (with passenger names)
 router.get("/my-offers", auth, async (req, res) => {
   if (!req.user) {
     return res
@@ -100,7 +104,11 @@ router.get("/my-offers", auth, async (req, res) => {
 
   try {
     const ridesResult = await pool.query(
-      "SELECT * FROM rides WHERE driver_id = $1 ORDER BY departure_time DESC",
+      `SELECT r.*, u.name AS driver_name
+       FROM rides r
+       JOIN users u ON r.driver_id = u.id
+       WHERE r.driver_id = $1
+       ORDER BY r.departure_time DESC`,
       [req.user.id]
     );
 
@@ -143,7 +151,7 @@ router.post("/:rideId/request", auth, async (req, res) => {
   }
 });
 
-// Get ride by ID
+// Get ride by ID (with driver name)
 router.get("/:id", async (req, res) => {
   const { id } = req.params;
 
@@ -152,9 +160,13 @@ router.get("/:id", async (req, res) => {
   }
 
   try {
-    const result = await pool.query("SELECT * FROM rides WHERE id = $1", [
-      parseInt(id),
-    ]);
+    const result = await pool.query(
+      `SELECT r.*, u.name AS driver_name
+       FROM rides r
+       JOIN users u ON r.driver_id = u.id
+       WHERE r.id = $1`,
+      [parseInt(id)]
+    );
     res.json(result.rows[0]);
   } catch (err) {
     console.error("❌ Error fetching ride:", err.message);
