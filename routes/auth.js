@@ -8,12 +8,23 @@ const nodemailer = require("nodemailer");
 const authMiddleware = require("../middleware/auth");
 
 // Setup Nodemailer (using Gmail)
+// const transporter = nodemailer.createTransport({
+//   service: "gmail",
+//   auth: {
+//     user: process.env.EMAIL_USER, // Gmail address
+//     pass: process.env.EMAIL_PASS, // Gmail app password
+//   },
+// });
+
 const transporter = nodemailer.createTransport({
-  service: "gmail",
+  host: "smtp.gmail.com",
+  port: 587,
+  secure: false,
   auth: {
-    user: process.env.EMAIL_USER, // Gmail address
-    pass: process.env.EMAIL_PASS, // Gmail app password
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
   },
+  tls: { rejectUnauthorized: false },
 });
 
 // SIGNUP
