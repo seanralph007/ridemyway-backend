@@ -52,7 +52,8 @@ router.post("/signup", async (req, res) => {
     console.log("Verification link:", link);
 
     await transporter.sendMail({
-      from: `"RideMyWay" <${process.env.EMAIL_USER}>`,
+      // from: `"RideMyWay" <${process.env.EMAIL_USER}>`,
+      from: process.env.EMAIL_USER,
       to: email,
       subject: "Verify Your RideMyWay Account",
       html: `
