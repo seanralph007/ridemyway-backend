@@ -49,6 +49,8 @@ router.post("/signup", async (req, res) => {
       email
     )}`;
 
+    console.log("Verification link:", link);
+
     await transporter.sendMail({
       from: `"RideMyWay" <${process.env.EMAIL_USER}>`,
       to: email,
@@ -68,6 +70,21 @@ router.post("/signup", async (req, res) => {
   } catch (err) {
     console.error("Signup error:", err.message);
     res.status(500).json({ message: "Server error" });
+  }
+});
+
+router.get("/test-email", async (req, res) => {
+  try {
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: "lilkingzy007@gmail.com",
+      subject: "Test Email",
+      text: "If you receive this, email sending works!",
+    });
+
+    res.send("Email sent successfully");
+  } catch (err) {
+    res.status(500).send("Email failed: " + err.message);
   }
 });
 
