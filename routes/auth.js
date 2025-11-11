@@ -5,16 +5,23 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 const authMiddleware = require("../middleware/auth");
-const { Resend } = require("resend");
+const nodemailer = require("nodemailer");
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Configure Brevo SMTP Transport
+const transporter = nodemailer.createTransport({
+  host: "smtp-relay.brevo.com",
+  port: 587,
+  auth: {
+    user: process.env.BREVO_SMTP_USER,
+    pass: process.env.BREVO_SMTP_PASS,
+  },
+});
 
 // SIGNUP
 router.post("/signup", async (req, res) => {
   const { name, email, password, role } = req.body;
 
   try {
-    // Check if user exists
     const existingUser = await pool.query(
       "SELECT * FROM users WHERE email = $1",
       [email]
@@ -38,20 +45,17 @@ router.post("/signup", async (req, res) => {
       email
     )}`;
 
-    console.log("Verification link:", link);
-
-    await resend.emails.send({
+    await transporter.sendMail({
       from: process.env.EMAIL_FROM,
       to: email,
       subject: "Verify Your RideMyWay Account",
       html: `
         <h2>Hi ${name},</h2>
-        <p>Welcome to <strong>RideMyWay</strong>! You're almost there.</p>
-        <p>Please confirm your email address by clicking the button below:</p>
+        <p>Welcome to <strong>RideMyWay</strong>!</p>
+        <p>Please verify your email by clicking the button below:</p>
         <p><a href="${link}" style="padding:10px 16px;background:#2563eb;color:#fff;text-decoration:none;border-radius:6px;">
-        Verify Email
-        </a></p>
-        <p>If you didn't sign up for RideMyWay, just ignore this message.</p>
+        Verify Email</a></p>
+        <p>If you didn’t create this account, you can safely ignore this message.</p>
       `,
     });
 
@@ -64,23 +68,23 @@ router.post("/signup", async (req, res) => {
   }
 });
 
-// TEST EMAIL ROUTE
+// TEST EMAIL
 router.get("/test-email", async (req, res) => {
   try {
-    await resend.emails.send({
+    await transporter.sendMail({
       from: process.env.EMAIL_FROM,
-      to: "lilkingzy007@gmail.com",
-      subject: "Test Email from Resend",
-      text: "If you receive this, Resend is working correctly.",
+      to: "web3chuks007@gmail.com",
+      subject: "Test Email from RideMyWay (Brevo)",
+      text: "If you receive this, Brevo SMTP works!",
     });
 
-    res.send("✅ Test email sent successfully.");
+    res.send("Brevo Test email sent successfully.");
   } catch (err) {
-    res.status(500).send("❌ Email failed: " + err.message);
+    res.status(500).send("Email failed: " + err.message);
   }
 });
 
-// VERIFY EMAIL
+// EMAIL VERIFICATION
 router.get("/verify-email", async (req, res) => {
   const { token, email } = req.query;
 
@@ -138,9 +142,9 @@ router.post("/login", async (req, res) => {
     }
 
     if (!user.is_verified) {
-      return res
-        .status(403)
-        .json({ message: "Please verify your email before logging in." });
+      return res.status(403).json({
+        message: "Please verify your email before logging in.",
+      });
     }
 
     const token = jwt.sign(
@@ -181,10 +185,7 @@ router.get("/me", authMiddleware, async (req, res) => {
       [req.user.id]
     );
 
-    const user = result.rows[0];
-    if (!user) return res.status(404).json({ message: "User not found" });
-
-    res.json({ user });
+    res.json({ user: result.rows[0] });
   } catch (err) {
     console.error("Get user error:", err.message);
     res.status(500).json({ message: "Server error" });
