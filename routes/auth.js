@@ -69,7 +69,7 @@ router.get("/test-email", async (req, res) => {
   try {
     await resend.emails.send({
       from: process.env.EMAIL_FROM,
-      to: process.env.EMAIL_FROM,
+      to: "lilkingzy007@gmail.com",
       subject: "Test Email from Resend",
       text: "If you receive this, Resend is working correctly.",
     });
