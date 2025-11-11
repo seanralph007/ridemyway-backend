@@ -4,31 +4,15 @@ const pool = require("../db");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
-const nodemailer = require("nodemailer");
 const authMiddleware = require("../middleware/auth");
+const { Resend } = require("resend");
 
-// Setup Nodemailer (using Gmail)
-// const transporter = nodemailer.createTransport({
-//   service: "gmail",
-//   auth: {
-//     user: process.env.EMAIL_USER, // Gmail address
-//     pass: process.env.EMAIL_PASS, // Gmail app password
-//   },
-// });
-
-const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 465,
-  secure: true, // SSL
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS, // Must be Gmail App Password
-  },
-});
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 // SIGNUP
 router.post("/signup", async (req, res) => {
   const { name, email, password, role } = req.body;
+
   try {
     // Check if user exists
     const existingUser = await pool.query(
@@ -42,17 +26,12 @@ router.post("/signup", async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
     const verificationToken = crypto.randomBytes(32).toString("hex");
 
-    // Save user as unverified
     await pool.query(
-      `
-      INSERT INTO users (name, email, password, role, is_verified, verification_token)
-      VALUES ($1, $2, $3, $4, $5, $6)
-    `,
+      `INSERT INTO users (name, email, password, role, is_verified, verification_token)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
       [name, email, hashedPassword, role, false, verificationToken]
     );
 
-    // Send verification email
-    // const link = `http://localhost:5173/verify-email?token=${verificationToken}&email=${encodeURIComponent(email)}`;
     const link = `${
       process.env.CLIENT_URL
     }/verify-email?token=${verificationToken}&email=${encodeURIComponent(
@@ -61,16 +40,18 @@ router.post("/signup", async (req, res) => {
 
     console.log("Verification link:", link);
 
-    await transporter.sendMail({
-      from: `"RideMyWay" <${process.env.EMAIL_USER}>`,
+    await resend.emails.send({
+      from: process.env.EMAIL_FROM,
       to: email,
       subject: "Verify Your RideMyWay Account",
       html: `
         <h2>Hi ${name},</h2>
-        <p>Thank you for signing up on RideMyWay!</p>
-        <p>Click the link below to verify your email address:</p>
-        <a href="${link}">Verify Email</a>
-        <p>If you didn't request this, you can ignore this message.</p>
+        <p>Welcome to <strong>RideMyWay</strong>! You're almost there.</p>
+        <p>Please confirm your email address by clicking the button below:</p>
+        <p><a href="${link}" style="padding:10px 16px;background:#2563eb;color:#fff;text-decoration:none;border-radius:6px;">
+        Verify Email
+        </a></p>
+        <p>If you didn't sign up for RideMyWay, just ignore this message.</p>
       `,
     });
 
@@ -83,22 +64,23 @@ router.post("/signup", async (req, res) => {
   }
 });
 
+// TEST EMAIL ROUTE
 router.get("/test-email", async (req, res) => {
   try {
-    await transporter.sendMail({
-      from: process.env.EMAIL_USER,
-      to: "lilkingzy007@gmail.com",
-      subject: "Test Email",
-      text: "If you receive this, email sending works!",
+    await resend.emails.send({
+      from: process.env.EMAIL_FROM,
+      to: process.env.EMAIL_FROM,
+      subject: "Test Email from Resend",
+      text: "If you receive this, Resend is working correctly.",
     });
 
-    res.send("Email sent successfully");
+    res.send("✅ Test email sent successfully.");
   } catch (err) {
-    res.status(500).send("Email failed: " + err.message);
+    res.status(500).send("❌ Email failed: " + err.message);
   }
 });
 
-// EMAIL VERIFICATION route
+// VERIFY EMAIL
 router.get("/verify-email", async (req, res) => {
   const { token, email } = req.query;
 
@@ -114,19 +96,13 @@ router.get("/verify-email", async (req, res) => {
         .json({ message: "Invalid or expired verification link." });
     }
 
-    // mark verified
     await pool.query(
-      `
-      UPDATE users
-      SET is_verified = true, verification_token = null
-      WHERE email = $1
-    `,
+      "UPDATE users SET is_verified = true, verification_token = null WHERE email = $1",
       [email]
     );
 
     const user = result.rows[0];
 
-    // issue JWT + cookie
     const jwtToken = jwt.sign(
       { id: user.id, role: user.role },
       process.env.JWT_SECRET,
@@ -187,7 +163,7 @@ router.post("/login", async (req, res) => {
   }
 });
 
-// Logout
+// LOGOUT
 router.post("/logout", (req, res) => {
   res.clearCookie("token", {
     httpOnly: true,
