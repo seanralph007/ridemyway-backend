@@ -46,7 +46,7 @@ router.post("/", auth, async (req, res) => {
   }
 });
 
-// View all rides (with driver name)
+// View all rides
 router.get("/", async (req, res) => {
   try {
     const result = await pool.query(
@@ -90,7 +90,7 @@ router.get("/my-requests", auth, async (req, res) => {
   }
 });
 
-// Driver views their offered rides (with passenger names)
+// Driver views their offered rides
 router.get("/my-offers", auth, async (req, res) => {
   if (!req.user) {
     return res
@@ -134,8 +134,8 @@ router.get("/my-offers", auth, async (req, res) => {
 
 // Passenger requests to join a ride
 router.post("/:rideId/request", auth, async (req, res) => {
-  if (req.user.role !== "passenger")
-    return res.status(403).json({ message: "Forbidden" });
+  // if (req.user.role !== "passenger")
+  //   return res.status(403).json({ message: "Forbidden" });
 
   const { rideId } = req.params;
 
@@ -151,7 +151,7 @@ router.post("/:rideId/request", auth, async (req, res) => {
   }
 });
 
-// Get ride by ID (with driver name)
+// Get ride by ID
 router.get("/:id", async (req, res) => {
   const { id } = req.params;
 

@@ -83,7 +83,7 @@ router.get("/test-email", async (req, res) => {
       sender: { name: "RideMyWay", email: process.env.EMAIL_FROM },
       to: [{ email: "web3chuks007@gmail.com" }],
       subject: "Test Email from RideMyWay (Brevo API)",
-      htmlContent: "<p>If you received this, the Brevo API is working ✅</p>",
+      htmlContent: "<p>If you received this, the Brevo API is working</p>",
     });
 
     console.log("Brevo response:", response);
