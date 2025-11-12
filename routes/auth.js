@@ -79,16 +79,20 @@ router.post("/signup", async (req, res) => {
 // TEST EMAIL
 router.get("/test-email", async (req, res) => {
   try {
-    await brevoClient.sendTransacEmail({
+    const response = await brevoClient.sendTransacEmail({
       sender: { name: "RideMyWay", email: process.env.EMAIL_FROM },
       to: [{ email: "web3chuks007@gmail.com" }],
       subject: "Test Email from RideMyWay (Brevo API)",
-      htmlContent: "<p>If you received this, the Brevo API is working </p>",
+      htmlContent: "<p>If you received this, the Brevo API is working ✅</p>",
     });
 
+    console.log("Brevo response:", response);
     res.send("Brevo Test email sent successfully.");
   } catch (err) {
-    res.status(500).send("Email failed: " + err.message);
+    console.error("Brevo API Error:", err.response?.body || err.message);
+    res
+      .status(500)
+      .send("Email failed: " + (err.response?.body?.message || err.message));
   }
 });
 
