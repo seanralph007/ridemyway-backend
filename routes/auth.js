@@ -5,17 +5,25 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 const authMiddleware = require("../middleware/auth");
-const nodemailer = require("nodemailer");
+const Brevo = require("@getbrevo/brevo");
 
-// Configure Brevo SMTP Transport
-const transporter = nodemailer.createTransport({
-  host: "smtp-relay.brevo.com",
-  port: 587,
-  auth: {
-    user: process.env.BREVO_SMTP_USER,
-    pass: process.env.BREVO_SMTP_PASS,
-  },
-});
+const brevoClient = new Brevo.TransactionalEmailsApi();
+brevoClient.setApiKey(
+  Brevo.TransactionalEmailsApiApiKeys.apiKey,
+  process.env.BREVO_API_KEY
+);
+
+// const nodemailer = require("nodemailer");
+
+// // Configure Brevo SMTP Transport
+// const transporter = nodemailer.createTransport({
+//   host: "smtp-relay.brevo.com",
+//   port: 587,
+//   auth: {
+//     user: process.env.BREVO_SMTP_USER,
+//     pass: process.env.BREVO_SMTP_PASS,
+//   },
+// });
 
 // SIGNUP
 router.post("/signup", async (req, res) => {
@@ -45,11 +53,11 @@ router.post("/signup", async (req, res) => {
       email
     )}`;
 
-    await transporter.sendMail({
-      from: process.env.EMAIL_FROM,
-      to: email,
+    await brevoClient.sendTransacEmail({
+      sender: { name: "RideMyWay", email: process.env.EMAIL_FROM },
+      to: [{ email }],
       subject: "Verify Your RideMyWay Account",
-      html: `
+      htmlContent: `
         <h2>Hi ${name},</h2>
         <p>Welcome to <strong>RideMyWay</strong>!</p>
         <p>Please verify your email by clicking the button below:</p>
@@ -71,11 +79,11 @@ router.post("/signup", async (req, res) => {
 // TEST EMAIL
 router.get("/test-email", async (req, res) => {
   try {
-    await transporter.sendMail({
-      from: process.env.EMAIL_FROM,
-      to: "web3chuks007@gmail.com",
-      subject: "Test Email from RideMyWay (Brevo)",
-      text: "If you receive this, Brevo SMTP works!",
+    await brevoClient.sendTransacEmail({
+      sender: { name: "RideMyWay", email: process.env.EMAIL_FROM },
+      to: [{ email: "web3chuks007@gmail.com" }],
+      subject: "Test Email from RideMyWay (Brevo API)",
+      htmlContent: "<p>If you received this, the Brevo API is working </p>",
     });
 
     res.send("Brevo Test email sent successfully.");
