@@ -41,6 +41,7 @@ router.post("/signup", async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
     const verificationToken = crypto.randomBytes(32).toString("hex");
 
+    // Step 1: Insert user into DB first
     await pool.query(
       `INSERT INTO users (name, email, password, role, is_verified, verification_token)
        VALUES ($1, $2, $3, $4, $5, $6)`,
@@ -53,26 +54,41 @@ router.post("/signup", async (req, res) => {
       email
     )}`;
 
-    await brevoClient.sendTransacEmail({
-      sender: { name: "RideMyWay", email: process.env.EMAIL_FROM },
-      to: [{ email }],
-      subject: "Verify Your RideMyWay Account",
-      htmlContent: `
-        <h2>Hi ${name},</h2>
-        <p>Welcome to <strong>RideMyWay</strong>!</p>
-        <p>Please verify your email by clicking the button below:</p>
-        <p><a href="${link}" style="padding:10px 16px;background:#2563eb;color:#fff;text-decoration:none;border-radius:6px;">
-        Verify Email</a></p>
-        <p>If you didn’t create this account, you can safely ignore this message.</p>
-      `,
-    });
+    // Step 2: Send verification email — handled separately so DB insert is never lost
+    try {
+      await brevoClient.sendTransacEmail({
+        sender: { name: "RideMyWay", email: process.env.EMAIL_FROM },
+        to: [{ email }],
+        subject: "Verify Your RideMyWay Account",
+        htmlContent: `
+          <h2>Hi ${name},</h2>
+          <p>Welcome to <strong>RideMyWay</strong>!</p>
+          <p>Please verify your email by clicking the button below:</p>
+          <p><a href="${link}" style="padding:10px 16px;background:#2563eb;color:#fff;text-decoration:none;border-radius:6px;">
+          Verify Email</a></p>
+          <p>If you didn't create this account, you can safely ignore this message.</p>
+        `,
+      });
 
-    res.status(201).json({
-      message: "Signup successful. Check your email to verify your account.",
-    });
+      // Email sent successfully
+      return res.status(201).json({
+        message: "Signup successful. Check your email to verify your account.",
+      });
+    } catch (emailErr) {
+      // Log the full Brevo error to help diagnose API key / sender issues
+      console.error("❌ Brevo email error:", emailErr?.response?.body || emailErr.message);
+
+      // User was created but email failed — inform them and they can request resend later
+      return res.status(201).json({
+        message:
+          "Account created, but we could not send the verification email. Please contact support or try again later.",
+        emailError: true,
+      });
+    }
   } catch (err) {
-    console.error("Signup error:", err.message);
-    res.status(500).json({ message: "Server error" });
+    // Only DB-level errors reach here now
+    console.error("❌ Signup DB error:", err.message);
+    res.status(500).json({ message: "Server error during signup." });
   }
 });
 
